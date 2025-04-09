@@ -1,0 +1,6 @@
+pyqt5
+python-nmap
+psutil
+scapy
+reportlab
+matplotlib
