@@ -1,79 +1,95 @@
+import socket
+import nmap
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QPushButton, QLineEdit, QMessageBox, QComboBox, QTextEdit
+    QWidget, QVBoxLayout, QLabel, QPushButton, QTableWidget,
+    QTableWidgetItem, QMessageBox, QRadioButton, QLineEdit, QHBoxLayout
 )
-from PyQt5.QtCore import Qt
-from utils.nmap_checker import get_nmap_path
-from modules.port_scanner import run_scan
+
 
 class ScannerWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Escáner de Puertos")
-        self.setMinimumSize(500, 600)
+        self.setFixedSize(600, 500)
 
         layout = QVBoxLayout()
 
         # Título
-        title = QLabel("🔍 Escáner de Puertos")
-        title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet("font-size: 18px; font-weight: bold; margin-bottom: 20px;")
-        layout.addWidget(title)
+        titulo = QLabel("🔍 Escaneo de Puertos")
+        titulo.setStyleSheet("font-size: 18px; font-weight: bold; margin-bottom: 15px;")
+        layout.addWidget(titulo)
 
-        # Mostrar ruta de Nmap
-        self.nmap_path_label = QLabel()
-        self.nmap_path_label.setStyleSheet("color: green; font-size: 12px;")
-        self.update_nmap_path_label()
-        layout.addWidget(self.nmap_path_label)
+        # Radios para elegir el tipo de escaneo
+        radio_layout = QHBoxLayout()
+        self.radio_auto = QRadioButton("Escaneo automático (localhost)")
+        self.radio_manual = QRadioButton("Escaneo manual")
+        self.radio_auto.setChecked(True)
 
-        # Campo para ingresar IP
-        self.input_ip = QLineEdit()
-        self.input_ip.setPlaceholderText("Introduce la IP o dominio objetivo")
-        layout.addWidget(self.input_ip)
+        radio_layout.addWidget(self.radio_auto)
+        radio_layout.addWidget(self.radio_manual)
+        layout.addLayout(radio_layout)
 
-        # Combo de tipo de escaneo
-        self.combo_tipo = QComboBox()
-        self.combo_tipo.addItems(["Rápido", "Completo", "Agresivo"])
-        layout.addWidget(self.combo_tipo)
+        # Campo de entrada para IP manual
+        self.entrada_ip = QLineEdit()
+        self.entrada_ip.setPlaceholderText("Introduce una IP o dominio (ej. 192.168.1.1)")
+        self.entrada_ip.setEnabled(False)
+        layout.addWidget(self.entrada_ip)
 
-        # Botón para escanear
-        btn_scan = QPushButton("Iniciar Escaneo")
-        btn_scan.clicked.connect(self.ejecutar_escaneo)
-        layout.addWidget(btn_scan)
+        self.radio_auto.toggled.connect(lambda: self.entrada_ip.setEnabled(not self.radio_auto.isChecked()))
 
-        # Área de resultados
-        self.resultado = QTextEdit()
-        self.resultado.setReadOnly(True)
-        layout.addWidget(self.resultado)
+        # Botón para iniciar escaneo
+        self.boton_escanear = QPushButton("Iniciar Escaneo")
+        self.boton_escanear.setStyleSheet("padding: 10px; font-size: 14px;")
+        self.boton_escanear.clicked.connect(self.ejecutar_escaneo)
+        layout.addWidget(self.boton_escanear)
+
+        # Tabla de resultados
+        self.tabla = QTableWidget()
+        self.tabla.setColumnCount(3)
+        self.tabla.setHorizontalHeaderLabels(["Puerto", "Estado", "Servicio"])
+        layout.addWidget(self.tabla)
 
         self.setLayout(layout)
 
-    def update_nmap_path_label(self):
-        nmap_path = get_nmap_path()
-        if nmap_path:
-            self.nmap_path_label.setText(f"✔️ Nmap detectado en: {nmap_path}")
-        else:
-            self.nmap_path_label.setText("❌ Nmap no detectado. Algunas funciones no estarán disponibles.")
-            self.nmap_path_label.setStyleSheet("color: red; font-size: 12px;")
-
     def ejecutar_escaneo(self):
-        objetivo = self.input_ip.text().strip()
-        if not objetivo:
-            QMessageBox.warning(self, "Campo vacío", "Por favor ingresa una IP o dominio.")
+        # Obtener IP objetivo
+        if self.radio_auto.isChecked():
+            objetivo = "127.0.0.1"
+        else:
+            objetivo = self.entrada_ip.text().strip()
+            if not objetivo:
+                QMessageBox.warning(self, "Falta IP", "Introduce una dirección IP válida.")
+                return
+
+        # Verificar si nmap está accesible
+        try:
+            escaner = nmap.PortScanner()
+        except nmap.PortScannerError:
+            QMessageBox.critical(self, "Error", "Nmap no está disponible o no se encuentra en el PATH.")
             return
 
-        tipo = self.combo_tipo.currentText().lower()
-        tipo_mapeado = {
-            "rápido": "fast",
-            "completo": "full",
-            "agresivo": "aggressive"
-        }.get(tipo, "fast")
+        try:
+            # Escaneo básico, puedes escalar con más opciones después
+            escaner.scan(hosts=objetivo, arguments='-T4 -F')
 
-        self.resultado.setText("⏳ Ejecutando escaneo, por favor espera...")
-        salida, error = run_scan(objetivo, tipo_mapeado)
+            if objetivo not in escaner.all_hosts():
+                QMessageBox.warning(self, "Sin respuesta", "No se recibió respuesta del host objetivo.")
+                return
 
-        if error:
-            self.resultado.setStyleSheet("color: red;")
-            self.resultado.setText(error)
-        else:
-            self.resultado.setStyleSheet("color: black;")
-            self.resultado.setText(salida)
+            puertos = escaner[objetivo].all_protocols()
+            self.tabla.setRowCount(0)
+
+            for protocolo in puertos:
+                lport = escaner[objetivo][protocolo].keys()
+                for puerto in sorted(lport):
+                    estado = escaner[objetivo][protocolo][puerto]['state']
+                    servicio = escaner[objetivo][protocolo][puerto].get('name', 'Desconocido')
+
+                    fila = self.tabla.rowCount()
+                    self.tabla.insertRow(fila)
+                    self.tabla.setItem(fila, 0, QTableWidgetItem(str(puerto)))
+                    self.tabla.setItem(fila, 1, QTableWidgetItem(estado.capitalize()))
+                    self.tabla.setItem(fila, 2, QTableWidgetItem(servicio.capitalize()))
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Ocurrió un error inesperado:\n{str(e)}")
