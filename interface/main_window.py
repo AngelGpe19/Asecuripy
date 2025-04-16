@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt
 from interface.scanner_window import ScannerWindow  # ← Importamos el módulo
+from interface.process_window import ProcessWindow  # Importar ventana de procesos
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -23,7 +24,7 @@ class MainWindow(QWidget):
         # Diccionario de botones y sus acciones
         botones = {
             "Escáner de Puertos": self.abrir_ventana_escaner,
-            "Análisis de Procesos": self.ventana_no_disponible,
+            "Análisis de Procesos":self.abrir_ventana_procesos,
             "Verificar Red WiFi": self.ventana_no_disponible,
             "Comprobar Contraseñas": self.ventana_no_disponible,
             "Activar VPN Segura": self.ventana_no_disponible,
@@ -45,6 +46,11 @@ class MainWindow(QWidget):
         ventana = ScannerWindow()
         ventana.show()
         self.ventanas_secundarias.append(ventana)  # evitar que se cierre
-
+    
+    def abrir_ventana_procesos(self):
+        ventana = ProcessWindow()
+        ventana.show()
+        self.ventanas_secundarias.append(ventana)
+    
     def ventana_no_disponible(self):
         print("🔧 Esta función aún no está disponible.")  # opcional: QMessageBox más adelante
