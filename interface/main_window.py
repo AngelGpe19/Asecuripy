@@ -38,6 +38,27 @@ class MainWindow(QWidget):
             btn.clicked.connect(accion)
             layout.addWidget(btn)
 
+            
+        creditos = QLabel()
+        creditos.setTextFormat(Qt.RichText)
+        creditos.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        creditos.setOpenExternalLinks(True)
+        creditos.setAlignment(Qt.AlignCenter)
+        creditos.setStyleSheet("""
+            QLabel {
+                color: #34495e;
+                font-size: 12px;
+                margin-top: 30px;
+            }
+            QLabel:hover {
+                text-decoration: underline;
+            }
+        """)
+        creditos.setText('© 2025 Angel Guadalupe • <a href="https://github.com/AngelGpe19">github.com/AngelGpe19</a>')
+        layout.addWidget(creditos)
+
+
+
         self.setLayout(layout)
 
         # Guardamos referencia para que no se cierre la ventana secundaria
