@@ -1,54 +1,48 @@
-# interface/process_window.py
-
-from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QTableWidget, QTableWidgetItem, QPushButton, QMessageBox
-)
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QLabel
+from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
-from modules.process_monitor import obtener_procesos_sospechosos, info_sistema
-
+from modules.process_monitor import obtener_procesos_clasificados, guardar_log_sospechosos
 
 class ProcessWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("🧠 Monitor de Procesos Sospechosos")
-        self.setFixedSize(900, 600)
+        self.setWindowTitle("Monitoreo de Procesos")
+        self.resize(800, 500)
 
         layout = QVBoxLayout()
+        self.label_info = QLabel("Procesos analizados con clasificación de comportamiento.")
+        layout.addWidget(self.label_info)
 
-        titulo = QLabel("🧪 Análisis de Procesos en Tiempo Real")
-        titulo.setAlignment(Qt.AlignCenter)
-        titulo.setStyleSheet("font-size: 18px; font-weight: bold; margin-bottom: 15px;")
-        layout.addWidget(titulo)
-
-        self.tabla = QTableWidget()
-        self.tabla.setColumnCount(6)
-        self.tabla.setHorizontalHeaderLabels([
-            "PID", "Nombre", "Usuario", "Ruta", "Comando", "Inicio"
-        ])
-        layout.addWidget(self.tabla)
-
-        self.btn_actualizar = QPushButton("🔁 Actualizar Lista de Procesos")
-        self.btn_actualizar.clicked.connect(self.actualizar_procesos)
-        layout.addWidget(self.btn_actualizar)
+        self.table = QTableWidget()
+        self.table.setColumnCount(5)
+        self.table.setHorizontalHeaderLabels(["PID", "Nombre", "Ruta", "Clasificación", "Score"])
+        layout.addWidget(self.table)
 
         self.setLayout(layout)
-        self.actualizar_procesos()
+        self.cargar_datos()
 
-    def actualizar_procesos(self):
-        procesos = obtener_procesos_sospechosos()
-        self.tabla.setRowCount(len(procesos))
+    def cargar_datos(self):
+        procesos = obtener_procesos_clasificados()
+        guardar_log_sospechosos(procesos)
+
+        self.table.setRowCount(len(procesos))
 
         for fila, proc in enumerate(procesos):
-            self.tabla.setItem(fila, 0, QTableWidgetItem(str(proc['pid'])))
-            self.tabla.setItem(fila, 1, QTableWidgetItem(proc['nombre']))
-            self.tabla.setItem(fila, 2, QTableWidgetItem(proc['usuario']))
-            self.tabla.setItem(fila, 3, QTableWidgetItem(str(proc['ruta'])))
-            self.tabla.setItem(fila, 4, QTableWidgetItem(proc['comando']))
-            self.tabla.setItem(fila, 5, QTableWidgetItem(proc['inicio']))
+            self.table.setItem(fila, 0, QTableWidgetItem(str(proc["pid"])))
+            self.table.setItem(fila, 1, QTableWidgetItem(proc["nombre"]))
+            self.table.setItem(fila, 2, QTableWidgetItem(proc["ruta"]))
+            self.table.setItem(fila, 3, QTableWidgetItem(proc["clasificacion"]))
+            self.table.setItem(fila, 4, QTableWidgetItem(str(proc["score"])))
 
-            if proc['sospechoso']:
-                for col in range(6):
-                    self.tabla.item(fila, col).setBackground(Qt.red)
+            # Resaltar la fila según clasificación
+            if proc["clasificacion"] == "Sospechoso":
+                self.colorear_fila(fila, QColor(255, 102, 102))  # rojo suave
+            elif proc["clasificacion"] == "Alto Consumo":
+                self.colorear_fila(fila, QColor(255, 255, 153))  # amarillo
+            else:
+                self.colorear_fila(fila, QColor(204, 255, 204))  # verde suave
 
-        QMessageBox.information(self, "✔️ Proceso Completado", f"Se analizaron {len(procesos)} procesos.")
-
+    def colorear_fila(self, fila, color):
+        for col in range(self.table.columnCount()):
+            self.table.item(fila, col).setBackground(color)
+            self.table.item(fila, col).setTextAlignment(Qt.AlignCenter)

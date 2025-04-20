@@ -6,6 +6,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt
 from interface.scanner_window import ScannerWindow  # ← Importamos el módulo
 from interface.process_window import ProcessWindow  # Importar ventana de procesos
+from interface.wifi_window import WifiAnalyzerWindow
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -25,7 +26,7 @@ class MainWindow(QWidget):
         botones = {
             "Escáner de Puertos": self.abrir_ventana_escaner,
             "Análisis de Procesos":self.abrir_ventana_procesos,
-            "Verificar Red WiFi": self.ventana_no_disponible,
+            "Verificar Red WiFi": self.abrir_ventana_wifi,
             "Comprobar Contraseñas": self.ventana_no_disponible,
             "Activar VPN Segura": self.ventana_no_disponible,
             "Generar Reporte de Seguridad": self.ventana_no_disponible
@@ -50,6 +51,11 @@ class MainWindow(QWidget):
     def abrir_ventana_procesos(self):
         ventana = ProcessWindow()
         ventana.show()
+        self.ventanas_secundarias.append(ventana)
+    
+    def abrir_ventana_wifi (self):
+        ventana = WifiAnalyzerWindow ()
+        ventana.show ()
         self.ventanas_secundarias.append(ventana)
     
     def ventana_no_disponible(self):
