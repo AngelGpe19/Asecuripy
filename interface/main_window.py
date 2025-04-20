@@ -7,6 +7,8 @@ from PyQt5.QtCore import Qt
 from interface.scanner_window import ScannerWindow  # ← Importamos el módulo
 from interface.process_window import ProcessWindow  # Importar ventana de procesos
 from interface.wifi_window import WifiAnalyzerWindow
+from interface.password_audit_window import PasswordAuditWindow
+
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -27,7 +29,7 @@ class MainWindow(QWidget):
             "Escáner de Puertos": self.abrir_ventana_escaner,
             "Análisis de Procesos":self.abrir_ventana_procesos,
             "Verificar Red WiFi": self.abrir_ventana_wifi,
-            "Comprobar Contraseñas": self.ventana_no_disponible,
+            "Comprobar Contraseñas": self.abrir_ventana_contrasenias,
             "Activar VPN Segura": self.ventana_no_disponible,
             "Generar Reporte de Seguridad": self.ventana_no_disponible
         }
@@ -81,3 +83,8 @@ class MainWindow(QWidget):
     
     def ventana_no_disponible(self):
         print("🔧 Esta función aún no está disponible.")  # opcional: QMessageBox más adelante
+
+    def abrir_ventana_contrasenias(self):
+        ventana = PasswordAuditWindow()
+        ventana.show()
+        self.ventanas_secundarias.append(ventana)

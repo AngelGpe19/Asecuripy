@@ -122,3 +122,9 @@ def escanear_dispositivos_red() -> List[str]:
     
     logging.info(f"Dispositivos encontrados: {len(activos)}")
     return activos
+
+if __name__ == "__main__":
+    print("[LOG] 🔄 Iniciando análisis de red...")
+    redes = obtener_redes_disponibles()
+    for r in redes:
+        print(r)
